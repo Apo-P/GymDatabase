@@ -83,9 +83,9 @@ class MainWindow(tk.Frame):
         textbox.insert(tk.END,"Customer Information: \n Name: \n Id: \n Trainings left: \n")
         textbox.config(state="disabled")
 
-        button = tk.Button(master=self, text="Show customer info", command= lambda : addinfo(textbox))
+        button = tk.Button(master=self, text="Show customer info", command= lambda : print('addinfo(textbox)'))
         button.pack()
-        button2 = tk.Button(master=self, text="click to clear info", command= lambda : clearinfo(textbox))
+        button2 = tk.Button(master=self, text="click to clear info", command= lambda : print('clearinfo(textbox)'))
         button2.pack()
         self.name=""
         self.entrybox = tk.Entry(master=self, textvariable=self.name)
