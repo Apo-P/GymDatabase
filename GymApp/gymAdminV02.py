@@ -2,35 +2,10 @@ import tkinter as tk
 from tkinter.font import names
 from typing import Text
 
-#THIS IS THE APP THAT WILL BE USED BY REGULAR EMPLOYEES
+import InputForms as forms
 
-def clearinfo(textbox:tk.Text):
-    textbox.config(state="normal")
-    #print("deleting")
-    textbox.delete("2.7","2.end") #deleting name
-    textbox.delete("3.5","3.end") #deleting id
-    textbox.delete("4.17","4.end") #deleting trainings
+#THIS IS THE APP THAT WILL BE USED BY ADMINISTRATION
 
-    textbox.config(state="disabled")
-
-def addinfo(textbox:tk.Text):
-    textbox.config(state="normal")
-    #print("inserting")
-    textbox.insert("2.7","ALSDKASLD") #inserting name
-    textbox.insert("3.5","6465465") #inserting id
-    textbox.insert("4.17","6969") #inserting trainings
-
-    textbox.config(state="disabled")
-
-def messageuser(frame:tk.Frame, msg:str):
-    """display a message notification to user"""
-    return
-    msgbox=tk.Message(master=frame, text=msg)
-    msgbox.pack()
-    message = tk.Toplevel(tk.Tk())
-
-#make a class to add and delete text
-#add text by giving a list with start points to add or delete , and it will iterate the lines to start functioning
 
 class GUI():
 
@@ -38,7 +13,7 @@ class GUI():
 
         #tk.Tk.__init__(self) #Could use this to make the GUI a tkinter window
         self.mainWindow = tk.Tk()
-        self.mainWindow.title("GYM-CHAIN")
+        self.mainWindow.title("GYM-CHAIN ADMININISTRATOR")
         self.mainWindow.iconbitmap("icon.ico")
 
         self.mainWindow.minsize(500,400) #min window size
@@ -48,14 +23,9 @@ class GUI():
         self.mainMenuBar = tk.Menu(master=self.mainWindow)
         self.mainMenuBar.add_command(label="CLICK",command=self.foo)
 
-        self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(InputWindow))
-
-        self.mainMenuBar.add_command(label="EditCustomerInformation",command=lambda:self.changeFrame(EditWindow))
-
-        self.mainMenuBar.add_command(label="Sales Window",command=lambda:self.changeFrame(SalesWindow))
-
         self.mainMenuBar.add_command(label="ReturnToMainWindow",command=lambda:self.changeFrame(MainWindow))
 
+        self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(InputWindow))
 
         self.mainWindow.config(menu=self.mainMenuBar) #Attaches mainMenuBar to mainwindow
 
@@ -88,7 +58,7 @@ class GUI():
             print("changing frame",self.frame.__class__.__name__,"to:",newFrameClass.__name__)
             self.frame.destroy()
         self.frame = newframe
-        self.frame.pack()
+        self.frame.pack(expand=True,fill=tk.BOTH) #New frame will take up all the screen it can find
 
 
     def foo(self):
@@ -135,10 +105,13 @@ class MainWindow(tk.Frame):
         print(entry)
         self.entrybox.delete("0","end")
 
-        messageuser(self, "User has given name:"+entry)
+        print("messageuser")#messageuser(self, "User has given name:"+entry)
+
 
 class InputWindow(tk.Frame):
+    
     def __init__(self, parent, controller):
+        """Makes a generic Input window with a Form"""
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
@@ -146,25 +119,42 @@ class InputWindow(tk.Frame):
 
         label.pack()
 
-class EditWindow(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
-        self.controller = controller
+        fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
+        newfields = {"FirstName":1,"LastName":2,"AFM":3,"Sex":4,"Salary":5,"Supervisor":6,"Department":7} #for testing
 
-        label = tk.Label(master=self, text="Welcome to edit window")
+        self.makeForm(fields,print,lambda: newfields) #can change print to any command we want to take the new data, can change the lambda to any command tha will return the new data
 
-        label.pack()
+    def makeForm(self, fields, dataHandlerCommand, dataUpdaterCommand=None, initialValues=None):
+        """Makes a frame with a form and some buttons to control it.    
+        fields=fields for the forms, dataHandlerCommand=the command to be executed when user has inputed new data,
+        dataUpdaterCommand=the command to be executed when user wants to update data (It will be used to take data to update the form),
+        initialValues= The initial values to be displayed in the form """
 
-class SalesWindow(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
-        self.controller = controller
+        entryFrame=tk.Frame(master=self)
 
-        label = tk.Label(master=self, text="Welcome to sales Window")
+        label = tk.Label(master=entryFrame, text="Please fill out the fields bellow") #change later to display what is being filled out
+        label.pack(pady=5,side=tk.TOP)
 
-        label.pack()
+        fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
+        entries=forms.makeInputForm(entryFrame,fields)
 
+        if initialValues:
+            forms.updateInputForm(entries,initialValues) #updating with values already in
 
+        ButtonFrame = tk.Frame(master=entryFrame)
+
+        confirmButton = tk.Button(master=ButtonFrame, text="CONFIRM", command=lambda: dataHandlerCommand(forms.getInputForm(entries))) #confirm button will give the datahandlercommand the data
+        confirmButton.pack(padx=5,pady=5,side=tk.RIGHT)
+        clearButton = tk.Button(master=ButtonFrame, text="Clear", command=lambda: forms.clearInputForm(entries))
+        clearButton.pack(side=tk.LEFT)
+
+        if dataUpdaterCommand is not None:
+            updateButton = tk.Button(master=ButtonFrame, text="Update", command=lambda: forms.updateInputForm(entries,dataUpdaterCommand())) #update button will run the dataUpdaterCommand to take data, and update the form
+            updateButton.pack(side=tk.LEFT)
+
+        ButtonFrame.pack(fill=tk.BOTH,side=tk.BOTTOM)
+
+        entryFrame.pack(padx=10,pady=10,fill=tk.X)
 
 def main():
     app = GUI()

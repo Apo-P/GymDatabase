@@ -2,11 +2,42 @@ import tkinter as tk
 from tkinter.font import names
 from typing import Text
 
-#THIS IS THE APP THAT WILL BE USED BY REGULAR EMPLOYEES
+#THIS IS THE APP THAT WILL BE USED BY ADMINISTRATION
 
 
 #make a class to add and delete text
 #add text by giving a list with start points to add or delete , and it will iterate the lines to start functioning
+
+def makeInputForm(frame,fields):
+
+    entries={}
+
+    for field in fields:
+        fieldFrame = tk.Frame(master=frame)
+        fieldLabel = tk.Label(master=fieldFrame, width=12, text=field+": ", anchor="w")
+        fieldEntry = tk.Entry(master=fieldFrame)
+        fieldEntry.insert(0,"0")#maybe change to 'NULL' for string fields?
+
+        fieldFrame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        fieldLabel.pack(side=tk.LEFT)
+        fieldEntry.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
+
+        entries[field]=fieldEntry
+    
+    return entries
+
+def getInputForm(entries):
+    currentEntries={}
+    for entry in entries.keys():
+        value=entries[entry].get()
+        currentEntries[entry]=value
+
+    return currentEntries
+
+def clearInputForm(entries):
+    for entry in entries.keys():
+        entries[entry].delete(0,"end") #deletes for first til last
+        entries[entry].insert(0,"0")
 
 class GUI():
 
@@ -15,7 +46,7 @@ class GUI():
         #tk.Tk.__init__(self) #Could use this to make the GUI a tkinter window
         self.mainWindow = tk.Tk()
         self.mainWindow.title("GYM-CHAIN ADMININISTRATOR")
-        self.mainWindow.iconbitmap(self.mainWindow,default="icon.ico")
+        self.mainWindow.iconbitmap("icon.ico")
 
         self.mainWindow.minsize(500,400) #min window size
         self.mainWindow.maxsize(800,800) #max window size
@@ -26,6 +57,7 @@ class GUI():
 
         self.mainMenuBar.add_command(label="ReturnToMainWindow",command=lambda:self.changeFrame(MainWindow))
 
+        self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(InputWindow))
 
         self.mainWindow.config(menu=self.mainMenuBar) #Attaches mainMenuBar to mainwindow
 
@@ -58,7 +90,7 @@ class GUI():
             print("changing frame",self.frame.__class__.__name__,"to:",newFrameClass.__name__)
             self.frame.destroy()
         self.frame = newframe
-        self.frame.pack()
+        self.frame.pack(expand=True,fill=tk.BOTH) #New frame will take up all the screen it can find
 
 
     def foo(self):
@@ -106,6 +138,30 @@ class MainWindow(tk.Frame):
         self.entrybox.delete("0","end")
 
         messageuser(self, "User has given name:"+entry)
+
+class InputWindow(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, master=parent, bg="green") #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
+        self.controller = controller
+
+        label = tk.Label(master=self, text="Welcome to input window")
+
+        label.pack()
+
+        entryFrame=tk.Frame(master=self, bg="red")
+        fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
+        entries=makeInputForm(entryFrame,fields)
+
+        ButtonFrame = tk.Frame(master=entryFrame, bg="blue")
+
+        confirmButton = tk.Button(master=ButtonFrame, text="CONFIRM", command=lambda: print(getInputForm(entries))) #add a function to handle confirming
+        confirmButton.pack(padx=5,pady=5,side=tk.RIGHT)
+        clearButton = tk.Button(master=ButtonFrame, text="Clear", command=lambda: clearInputForm(entries))
+        clearButton.pack(side=tk.LEFT)
+
+        ButtonFrame.pack(fill=tk.BOTH,side=tk.BOTTOM)
+
+        entryFrame.pack(padx=10,pady=10)
 
 
 def main():
