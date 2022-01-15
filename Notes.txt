@@ -1,6 +1,8 @@
 Πρεπει να υπαρξει οντοτητα προπονηση καθως μπορει καποιος να θελει να παει σε λιγες να τις δοκιμασει.
 Επισης με τις προπονησεις μπορουμε να δουμε ποσοι πανε καθε φορα
 
+κναουμε drop τον προσωπικο γυμναστη και ο πελατης να εχει τον γυμναστη ως προσωπικο, επιπλεον να γινει ενα view ωστε να βλεπουμε γρηγορα πιοι ειναι personals
+
 
 Python sqlite3 ειναι το standard library
 
@@ -28,3 +30,6 @@ usefull tkinterlinks:
 sqlite search 'enum' , for constraints in a table
 
 sqlite errors , for wrong values
+
+python random.choice(list)
+	https://www.w3schools.com/python/ref_random_choice.asp

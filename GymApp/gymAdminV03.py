@@ -1,11 +1,29 @@
 import tkinter as tk
 from tkinter.font import names
 from typing import Text
+import tkinter.messagebox #import messagebox (it isnt included by default)
+
 import sqlite3
 
 import InputForms as forms
 
 #THIS IS THE APP THAT WILL BE USED BY ADMINISTRATION
+
+#Database location and a global cursor to use in the program
+connection = sqlite3.connect("gym.db")
+cursor = connection.cursor()
+
+def execute_sql(cursor,sql):
+    """Will execute the sql command given at the cursor given. It will return the cursor so we can do a quick fetch after the querry (i.e. execute_sql(cursor,sql).fetchall())"""
+
+    return cursor.execute(sql)
+
+def getUserInfo(userId):
+    """Returns all info on user requested by id"""
+
+    cmd=f"""SELECT * FROM client WHERE client_id={userId};"""
+
+    return execute_sql(cursor,cmd).fetchone()
 
 
 class GUI():
@@ -20,6 +38,8 @@ class GUI():
         self.mainWindow.minsize(500,400) #min window size
         self.mainWindow.maxsize(800,800) #max window size
         #self.mainWindow.geometry("400x400")#change window size
+
+        self.mainWindow.protocol("WM_DELETE_WINDOW", self.close_app) #will run the close app when user clicks the exit button
 
         self.mainMenuBar = tk.Menu(master=self.mainWindow)
         self.mainMenuBar.add_command(label="CLICK",command=self.foo)
@@ -61,6 +81,15 @@ class GUI():
         self.frame = newframe
         self.frame.pack(expand=True,fill=tk.BOTH) #New frame will take up all the screen it can find
 
+    def close_app(self):
+        """This will run when user presses the close bytton"""
+
+        if tk.messagebox.askyesno("Quit", "Do you want to quit?"):
+
+            connection.close() #close connection to database 
+            print("connection to db closed")
+            self.mainWindow.destroy() #destroy app
+            exit() #exit python (just in case anything remained open)
 
     def foo(self):
         print("foo")
@@ -186,6 +215,9 @@ class InputWindow(tk.Frame):
         entryFrame.pack(padx=10,pady=10,fill=tk.X)
 
 def main():
-    app = GUI()
+    #app = GUI() #runprogram
+
+    print(getUserInfo("1"))
+    connection.close()
 
 if __name__ =="__main__":main()
