@@ -10,3 +10,21 @@ https://stackoverflow.com/questions/510972/getting-the-class-name-of-an-instance
 icon.ico not loading on vscode:
 	https://code.visualstudio.com/docs/editor/debugging
 	Needed To change cwd in launch.json of the debugger so it knows the working folder for debugging is the GymApp folder
+
+usefull tkinterlinks:
+
+	general quick reference:
+	https://www.tutorialspoint.com/python/python_gui_programming.htm
+
+	Simple layout examples:
+	https://zetcode.com/tkinter/layout/
+
+	event handling:
+	https://www.pythontutorial.net/tkinter/tkinter-event-binding/
+
+	nice tk.stringVar examples:
+	https://www.pythontutorial.net/tkinter/tkinter-stringvar/
+
+sqlite search 'enum' , for constraints in a table
+
+sqlite errors , for wrong values

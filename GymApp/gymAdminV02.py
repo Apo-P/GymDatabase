@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter.font import names
 from typing import Text
+import time
 
 import InputForms as forms
 
@@ -70,42 +71,70 @@ class MainWindow(tk.Frame):
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
-        labels=[]
-
         label = tk.Label(master=self, text="Welcome to MainWindow")
 
         label.pack()
 
-        label2 = tk.Label(master=self, text="Customer ID:")
-        label2.pack()
+        idFrame = tk.Frame(master=self, bg ="red")
+
+        idlabel = tk.Label(master=idFrame, text="Customer ID:")
+        idlabel.pack(side=tk.LEFT)
+
+        customerId = tk.StringVar(master=idFrame,value="")
+        showIdlabel = tk.Label(master=idFrame, textvar=customerId)
+        showIdlabel.pack(side=tk.LEFT)
+
+        idFrame.pack(side=tk.TOP,fill=tk.BOTH)
+
+        ButtonFrame = tk.Frame(master=self)
+        ButtonFrame.pack(side=tk.TOP)
+
+        infobutton = tk.Button(master=ButtonFrame, text="Show customer info", command= lambda : customerId.set("1234564574"))
+        infobutton.pack(side=tk.LEFT)
+        clearbutton = tk.Button(master=ButtonFrame, text="click to clear info", command= lambda : customerId.set(""))
+        clearbutton.pack(side=tk.LEFT)
+
+        moreinfobutton = tk.Button(master=ButtonFrame, text="Show more customer info", command= lambda : self.showMoreInfo(self,customerId))
+        moreinfobutton.pack(side=tk.LEFT)
+
+
+        entryboxvar =tk.StringVar(master=self)
+        entrybox = tk.Entry(master=self, textvariable=customerId)
+        entrybox.bind('<Return>', lambda event : self.getentry(event,entrybox, customerId) ) #bind function forces to take into consideration the event that triggers the command
+        entrybox.pack(side=tk.TOP)
 
         textbox = tk.Text(master=self)
         textbox.insert(tk.END,"Customer Information: \n Name: \n Id: \n Trainings left: \n")
         textbox.config(state="disabled")
-
-        button = tk.Button(master=self, text="Show customer info", command= lambda : print('addinfo(textbox)'))
-        button.pack()
-        button2 = tk.Button(master=self, text="click to clear info", command= lambda : print('clearinfo(textbox)'))
-        button2.pack()
-        self.name=""
-        self.entrybox = tk.Entry(master=self, textvariable=self.name)
-        self.entrybox.bind('<Return>',self.getentry)
-        self.entrybox.pack()
-
-        textbox.pack()
+        #textbox.pack()
 
 
+    def showMoreInfo(self, frame, customerId):
+        """Will create a textbox with more of the customers information"""
+        #getinfo()
+        fields = {"FirstName":1,"LastName":2,"AFM":3,"Sex":4,"Salary":5,"Supervisor":6,"Department":7} #for testing
+        textframe = tk.Frame(master=frame)
 
-    def getentry(self, event):
-        """Handles getting the entry when users presses enter"""
 
-        #print("bruh")
-        entry=self.entrybox.get()
-        if entry =="":entry="name not given"
-        print(entry)
-        self.entrybox.delete("0","end")
+        textbox = tk.Text(master=textframe)
 
-        print("messageuser")#messageuser(self, "User has given name:"+entry)
+        textbox.insert(tk.END,"gasgkasjgasjd\n")
+
+        for field in fields.keys():
+
+            textbox.insert(tk.END,str(fields[field])+"\n")
+
+        textbox.pack(fill=tk.BOTH)
+        textframe.pack(side=tk.TOP,fill=tk.BOTH)
+
+
+    def getentry(self,event, entrybox, outvar):
+        """Handles getting the entry when users presses enter
+        event= the event that called the function (wont be used now)
+        entrybox=the entrybox to get the variable from, outvar=the variable to save the entry to. """
+
+        outvar.set(entrybox.get())
+        
 
 
 class InputWindow(tk.Frame):
