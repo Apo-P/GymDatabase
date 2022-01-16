@@ -48,6 +48,8 @@ class GUI():
 
         self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(InputWindow))
 
+        self.mainMenuBar.add_command(label="ShowCustomers",command=lambda:self.changeFrame(DisplayWindow))
+
         self.mainWindow.config(menu=self.mainMenuBar) #Attaches mainMenuBar to mainwindow
 
         #use the code if its not needed to retain frames
@@ -213,6 +215,103 @@ class InputWindow(tk.Frame):
         ButtonFrame.pack(fill=tk.BOTH,side=tk.BOTTOM)
 
         entryFrame.pack(padx=10,pady=10,fill=tk.X)
+
+
+class DisplayWindow (tk.Frame):
+    
+    def __init__(self, parent, controller):
+        """Makes a generic Display window"""
+        tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
+        self.controller = controller
+
+        label = tk.Label(master=self, text="Welcome to Display window")
+
+        label.pack()
+
+        columns = ("FirstName","LastName","PhoneNumber","Trainer") #for testing
+        data = (("Smith","Smithpoulos","6912345678",""),("John","Johnopoulos","6923456789","12345678"))
+
+        self.makeDisplayLabels(columns,data)
+
+        print(self.columnLabels.keys())
+        print(self.dataFrames.keys())
+
+        self.updateDisplay([0],(("John","Johnopoulos","6923456789","123456789"),)) #prosoxi sto input giati prepei na einai panta tuple apo tuples
+
+    def makeDisplayLabels(self,columnNames,dataToDisplay):
+        """Make display frame with columns and rows with data ,
+        columnNames is the names of the column to be displayed, and data is the data to be displayed 
+        Format should be columnNames=("col1","col2",...,"coln") data=(("col1-data","col2-data",...,"coln-data"),("col1-data","col2-data",...,"coln-data"),....) """
+
+        displayWindow = tk.Frame(master=self)
+
+        self.columnLabels={}
+
+        columnFrame= tk.Frame(master=displayWindow,)
+        i=0
+        for column in columnNames:
+            columnLabel=tk.Label(master=columnFrame,width=12, text=column)
+            columnLabel.grid(column=i,row=0)
+            i+=1
+            self.columnLabels[column]=columnLabel
+            #print(f"column={column}")
+        columnFrame.pack(side=tk.TOP,fill=tk.X)
+
+
+        self.dataFrames = {}
+        for data in range(len(dataToDisplay)):
+            dataFrame=tk.Frame(master=displayWindow)
+            self.dataFrames[data]=[dataFrame]
+            dataFrame.pack(side=tk.TOP,fill=tk.X)
+
+            for column in range(len(columnNames)):
+                dataLabel=tk.Label(master=dataFrame,width=12, text=f"{dataToDisplay[data][column]}")
+                dataLabel.grid(column=column,row=0)
+                self.dataFrames[data].append(dataLabel)
+
+        displayWindow.pack()
+
+    def updateDisplay(self,indexes,newdata):
+        """Will update the display on the indexes given with the new data
+        newdata must be tuple of tuples always
+        indexes must always be a list"""
+        i=0
+        for index in indexes:
+            print(index)
+            for column in range(len(self.columnLabels.keys())):
+                print(index,column+1)
+                self.dataFrames[index][column+1].config(text=newdata[i][column]) #column +1 giati column=0 einai to frame to idio to frame
+            i+=1
+
+
+class SearchWindow(tk.Frame):
+
+    def __init__(self, parent, controller):
+        """Makes a generic Display window"""
+        tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
+        self.controller = controller
+
+        label = tk.Label(master=self, text="Welcome to Display window")
+
+        label.pack()
+
+        columns = ("FirstName","LastName","PhoneNumber","Trainer") #for testing
+        data = (("Smith","Smithpoulos","6912345678",""),("John","Johnopoulos","6923456789","12345678"))
+
+        self.make_search_window()
+
+
+    def make_search_window(self):
+
+        searchFrame=tk.Frame(master=self)
+        searchFrame.pack()
+
+        
+
+        pass
+
+
+
 
 def main():
     app = GUI() #runprogram
