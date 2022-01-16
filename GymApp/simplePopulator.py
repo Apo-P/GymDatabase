@@ -484,27 +484,20 @@ def make_trainings():
     populate_trainings(100)
 
 
-def populate_payments(client_amount):
-    def create_payments():
+def populate_buys(amount):
+    def create_buy():
 
-        def create_payment(client_id,amount,init_day):
-            date=create_date(init_day,"2022-12-12") #create a random date after the date the sub was bought
-            values=client_id,amount,date
-            cmd = f"""INSERT INTO payment (client_id,amount,payment_date) VALUES ("{values}");""" 
+        cmd="""SELECT id FROM client ORDER BY RANDOM();"""
+        client_id = execute_sql(cursor,cmd).fetchone()[0]
+        cmd="""SELECT name FROM subscription ORDER BY RANDOM();"""
+        subscription = execute_sql(cursor,cmd).fetchone()[0]
+        date=create_date("2021-11-1","2022-1-16")
+        discount=0
 
-        cmd = f"""SELECT c.id FROM client as c WHERE c.id NOT IN(SELECT DISTINCT id FROM payment) AND c.id IN(SELECT DISTINCT id FROM buys)  ORDER BY RANDOM();""" #select random client who has no payment but has buys
-        print(cmd)
-        client_id=execute_sql(cursor,cmd).fetchone()[0]
+        return subscription,client_id,date,discount
 
-        cmd=f"""SELECT s.name,s.cost FROM subscription as s,buys as b WHERE b.client_id={client_id} and s.name NOT IN (SELECT name FROM pays_off WHERE client_id={client_id});""" #select random amount from bought subscriptions to make payments for 
-        print(cmd)
-        subscription,total_amount=execute_sql(cursor,cmd).fetchone()
-
-
-
-
-    for id in range(client_amount):
-        cmd = f"""INSERT INTO payment (name) VALUES ("{create_sport()}");""" 
+    for id in range(amount):
+        cmd = f"""INSERT INTO buys (subscription,client_id,date,discount) VALUES {create_buy()};""" 
 
         #print(cmd)
         try:
@@ -513,24 +506,152 @@ def populate_payments(client_amount):
             #raise e
             pass
 
-def make_payments():
-    #delete table if it existed
-    cmd="""DROP TABLE IF EXISTS payment;"""
-    execute_sql(cursor,cmd)
+def make_buys():
+        #delete table if it existed
+        cmd="""DROP TABLE IF EXISTS buys;"""
+        execute_sql(cursor,cmd)
 
-    #create table
-    cmd=f"""CREATE TABLE IF NOT EXISTS payment(
-        "client_id" integer NOT NULL,
-        "amount" integer NOT NULL,
-        "payment_date" DATE NOT NULL,
+        #create table #ADD UNIQUE TOGETHER
+        cmd=f"""CREATE TABLE IF NOT EXISTS buys(
+            "subscription" varchar(50) NOT NULL,
+            "client_id" integer NOT NULL,
+            "date" DATE NOT NULL,
+            "discount" float NOT NULL,
+            
+            CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE
+            );"""
+
+        execute_sql(cursor,cmd)
+        populate_buys(10)
+
+
+def populate_payments_pay_offs(client_amount):
+    def create_payments():
+
+        def create_payment(client_id,amount,init_day):
+            date=create_date(init_day,"2022-12-12") #create a random date after the date the sub was bought
+            values=client_id,amount,date
+            cmd = f"""INSERT INTO payment (client_id,amount,payment_date) VALUES ("{values}");""" 
+            try:
+                execute_sql(cursor,cmd)
+            except Exception as e:
+                #print(e)
+                pass
+
+        def create_pay_off(subscription,client_id):
+            values=subscription,client_id
+            cmd = f"""INSERT INTO pay_off (subscription,client_id) VALUES ("{values}");""" 
+            try:
+                execute_sql(cursor,cmd)
+            except Exception as e:
+                #print(e)
+                pass
+            
+
         
-        CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        );"""
+        cmd = f"""SELECT c.id FROM client as c WHERE c.id NOT IN(SELECT DISTINCT id FROM payment) AND c.id IN(SELECT DISTINCT id FROM buys)  ORDER BY RANDOM();""" #select random client who has no payment but has buys
+        print(cmd)
+        client_id=execute_sql(cursor,cmd).fetchone()[0]
 
-    execute_sql(cursor,cmd)
+        cmd=f"""SELECT s.name,s.price FROM subscription as s,buys as b WHERE b.client_id={client_id} and s.name NOT IN (SELECT name FROM pays_off WHERE client_id={client_id});""" #select random amount from bought subscriptions to make payments for 
+        print(cmd)
+        results=execute_sql(cursor,cmd).fetchone()
+        print(results)
+        subscription,total_amount=results
+
+        cmd=f"""SELECT date FROM buys WHERE subscription="{subscription}" ;"""  #select the date from the buy of the subscription
+        print(cmd)
+        date=subscription,total_amount=execute_sql(cursor,cmd).fetchone()[0]
+
+
+        div=range(random.randint(1,4)) #select random dividant
+        for i in range(div): #make payment and assign what it pays off
+            create_payment(client_id,total_amount/div,date)
+            create_pay_off(subscription,client_id)
+
+    for client in range(client_amount):
+        create_payments()
+
+def make_payments_pay_offs():
+    def make_pays_off():
+        #delete table if it existed
+        cmd="""DROP TABLE IF EXISTS pays_off;"""
+        execute_sql(cursor,cmd)
+
+        #create table
+        cmd=f"""CREATE TABLE IF NOT EXISTS pays_off(
+            "subscription" varchar(50) NOT NULL,
+            "client_id" integer NOT NULL,
+            
+            CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "payment"("id") ON DELETE CASCADE ON UPDATE CASCADE
+            );"""
+
+        execute_sql(cursor,cmd)
+
+    def make_payments():
+        #delete table if it existed
+        cmd="""DROP TABLE IF EXISTS payment;"""
+        execute_sql(cursor,cmd)
+
+        #create table
+        cmd=f"""CREATE TABLE IF NOT EXISTS payment(
+            "client_id" integer NOT NULL,
+            "amount" integer NOT NULL,
+            "payment_date" DATE NOT NULL,
+            
+            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE
+            );"""
+
+        execute_sql(cursor,cmd)
+
+    make_payments()
+    make_pays_off()
+    populate_payments_pay_offs(5)
 
 def populate_relations():
-    pass
+    def create_equipment_use():
+        def create_equipment(training_id,equipment_id):
+            values=training_id,equipment_id
+            #print(values)
+            cmd = f"""INSERT INTO equipment_use (training_id,equipment_id) VALUES ("{values}");""" 
+            try:
+                execute_sql(cursor,cmd)
+            except Exception as e:
+                #print(e)
+                pass
+            
+        cmd="""SELECT id FROM training;"""
+        results=execute_sql(cursor,cmd).fetchall()
+        #print(results)
+        for training_id in results:
+            cmd="""SELECT serial_number FROM equipment ORDER BY RANDOM();"""
+            equipment_id=execute_sql(cursor,cmd).fetchone()[0]
+        
+            create_equipment(training_id[0],equipment_id)
+
+    def create_works():
+
+        def create_work(gym,employee):
+            values=gym,employee
+            #print(values)
+            cmd = f"""INSERT INTO work (gym_location,employee_afm) VALUES ("{values}");""" 
+            try:
+                execute_sql(cursor,cmd)
+            except Exception as e:
+                #print(e)
+                pass
+            
+        cmd="""SELECT afm FROM employee;"""
+        results=execute_sql(cursor,cmd).fetchall()
+
+        for employee in results:
+            gym=random.choice(locations)
+            create_work(gym,employee[0]) #employe[0] giati einai tuple 
+        
+    create_equipment_use()
+    create_works()
 
 def make_relations():
     def make_equipment_use():
@@ -544,7 +665,7 @@ def make_relations():
             "equipment_id" integer NOT NULL,
             
             CONSTRAINT "training_fk" FOREIGN KEY("training_id") REFERENCES "training"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "equipment_fk" FOREIGN KEY("equipment_id") REFERENCES "equipment"("serial_number") ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "equipment_fk" FOREIGN KEY("equipment_id") REFERENCES "equipment"("serial_number") ON DELETE CASCADE ON UPDATE CASCADE
             );"""
 
         execute_sql(cursor,cmd)
@@ -560,63 +681,36 @@ def make_relations():
             "employee_afm" integer NOT NULL,
             
             CONSTRAINT "gym_fk" FOREIGN KEY("gym_location") REFERENCES "gym"("location") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "employee_fk" FOREIGN KEY("employee_afm") REFERENCES "employee"("afm") ON DELETE CASCADE ON UPDATE CASCADE,
-            );"""
-
-        execute_sql(cursor,cmd)
-    
-    def make_buys():
-        #delete table if it existed
-        cmd="""DROP TABLE IF EXISTS buys;"""
-        execute_sql(cursor,cmd)
-
-        #create table
-        cmd=f"""CREATE TABLE IF NOT EXISTS buys(
-            "subscription_name" varchar(50) NOT NULL,
-            "client_id" integer NOT NULL,
-            "date" DATE NOT NULL,
-            "discount" float NOT NULL,
-            
-            CONSTRAINT "subscription_fk" FOREIGN KEY("subscription_name") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            );"""
-
-        execute_sql(cursor,cmd)
-    
-    def make_pays_off():
-        #delete table if it existed
-        cmd="""DROP TABLE IF EXISTS pays_off;"""
-        execute_sql(cursor,cmd)
-
-        #create table
-        cmd=f"""CREATE TABLE IF NOT EXISTS pays_off(
-            "subscription_name" varchar(50) NOT NULL,
-            "client_id" integer NOT NULL,
-            
-            CONSTRAINT "subscription_fk" FOREIGN KEY("subscription_name") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "payment"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "employee_fk" FOREIGN KEY("employee_afm") REFERENCES "employee"("afm") ON DELETE CASCADE ON UPDATE CASCADE
             );"""
 
         execute_sql(cursor,cmd)
     
     make_equipment_use()
     make_works()
-    make_buys()
-    make_pays_off()
-    populate_relations()
+    populate_relations() 
 
 
-def getInfo(table,key):
-    """Get all info of a object in a table with the key given"""
+def getInfo(table,key=None):
+    """Get all info of a object in a table with the key given (if no key is given will return all info)"""
+    if key:
+        cmd=f"""SELECT * FROM {table} WHERE {pk[table]}={key};"""
 
-    cmd=f"""SELECT * FROM {table} WHERE {pk[table]}={key};"""
+        #print(cmd)
+        try:
+            return execute_sql(cursor,cmd).fetchone()
+        except Exception as e: #for any expection will enter and name it e (since Exception class is God class for all exceptions)
+            print(e)
+            #raise e #can uncomment in order to stop program
+    else:
+        cmd=f"""SELECT * FROM {table};"""
 
-    #print(cmd)
-    try:
-        return execute_sql(cursor,cmd).fetchone()
-    except Exception as e: #for any expection will enter and name it e (since Exception class is God class for all exceptions)
-        print(e)
-        #raise e #can uncomment in order to stop program
+        #print(cmd)
+        try:
+            return execute_sql(cursor,cmd).fetchall()
+        except Exception as e: #for any expection will enter and name it e (since Exception class is God class for all exceptions)
+            print(e)
+            #raise e #can uncomment in order to stop program
 
 def getTableNames():
     """returns tuple with all the table names in db"""
@@ -663,7 +757,16 @@ def getAllTablesInfo():
     names=getTableNames()
     for name in names:
         col_names,pk = getTableInfo(name)
-        print(f"table {name} has columns {col_names} with column: {pk[0]} being its primary key")
+        if pk:
+            print(f"table {name} has columns {col_names} with column: {pk[0]} being its primary key")
+        else:
+            print(f"table {name} has columns {col_names} with no primary key")
+
+def printAllValues(table):
+    results=getInfo(table)
+    #print(results)
+    for result in results:
+        print(result)
 
 make_gyms()
 make_employees()
@@ -674,6 +777,11 @@ make_sports()
 make_subscriptions()
 make_clients()
 make_trainings()
+make_buys()
+make_relations()
+
+printAllValues("buys")
+make_payments_pay_offs()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
