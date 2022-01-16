@@ -215,9 +215,9 @@ class InputWindow(tk.Frame):
         entryFrame.pack(padx=10,pady=10,fill=tk.X)
 
 def main():
-    #app = GUI() #runprogram
+    app = GUI() #runprogram
 
-    print(getUserInfo("1"))
-    connection.close()
+    #print(getUserInfo("1"))
+    #connection.close()
 
 if __name__ =="__main__":main()

@@ -56,6 +56,23 @@ def create_date(previous_date = "2010-1-1",yearlimit="2022-2-2"):
 
     return "%s-%s-%s" % (y, str(m).zfill(2), str(d).zfill(2))
 
+def create_time(previous_time = "00:00" , timelimit="23:59",simple_time=True):
+    """ Create a random time that happens AFTER previous_time. (minute output is can be 00 or 30 if simple_time=True)"""
+    
+    p_h, p_m = (int(i) for i in previous_time.split(':'))
+    l_h, l_m = (int(i) for i in timelimit.split(':'))
+
+    h = random.randint(p_h, l_h)
+    if simple_time:
+        if random.getrandbits(1):
+            m = "00"
+        else:
+            m = "30"
+    else:
+        m = random.randint(p_m if h == p_h else 0, 59 if h==p_h else l_m)
+
+    return "%s:%s" % (str(h).zfill(2), str(m).zfill(2))
+
 
 def populate_gyms(amount):
 
@@ -254,45 +271,8 @@ def make_equipment():
     populate_equipment(10)
     pk["equipment"]="serial_number"
 
-def populate_subscription(amount):
 
-    def create_sport():
-
-        name=random.choice(sports)
-
-        return name
-
-    for id in range(amount):
-        cmd = f"""INSERT INTO sport (name) VALUES {create_sport()};""" #Dont use ({create_client()}) because we would end up with double ()
-
-        #print(cmd)
-        try:
-            execute_sql(cursor,cmd)
-        except:
-            pass #except failed constraint
-
-def make_subscription():
-
-    #delete table if it existed
-    cmd="""DROP TABLE IF EXISTS subscription;"""
-    execute_sql(cursor,cmd)
-
-    #create table
-    #datelimit = "2022-01-15" #change later to change when program is run CONSTRAINT 'date_cleaned' CHECK(last_cleaned <= {datelimit}
-    cmd=f"""CREATE TABLE IF NOT EXISTS subscription(
-        "name" varchar(30) NOT NULL PRIMARY KEY,
-        "price" integer NOT NULL,
-        "start_date" DATE NOT NULL,
-        "end_date" DATE NOT NULL,
-        "description" varchar(30) DEFAULT NULL
-    );"""
-
-    execute_sql(cursor,cmd)
-    populate_subscription(10)
-    pk["subscription"]="name"
-
-
-def populate_sports(amount):
+def populate_subscriptions(amount):
 
     def create_subscription():
 
@@ -320,6 +300,45 @@ def populate_sports(amount):
             execute_sql(cursor,cmd)
         except:
             pass #except failed constraint
+
+def make_subscriptions():
+
+    #delete table if it existed
+    cmd="""DROP TABLE IF EXISTS subscription;"""
+    execute_sql(cursor,cmd)
+
+    #create table
+    #datelimit = "2022-01-15" #change later to change when program is run CONSTRAINT 'date_cleaned' CHECK(last_cleaned <= {datelimit}
+    cmd=f"""CREATE TABLE IF NOT EXISTS subscription(
+        "name" varchar(30) NOT NULL PRIMARY KEY,
+        "price" integer NOT NULL,
+        "start_date" DATE NOT NULL,
+        "end_date" DATE NOT NULL,
+        "description" varchar(30) DEFAULT NULL
+    );"""
+
+    execute_sql(cursor,cmd)
+    populate_subscriptions(10)
+    pk["subscription"]="name"
+
+
+def populate_sports(amount):
+
+    def create_sport():
+
+        name=random.choice(sports)
+
+        return name
+
+    for id in range(amount):
+        cmd = f"""INSERT INTO sport (name) VALUES ("{create_sport()}");""" 
+
+        #print(cmd)
+        try:
+            execute_sql(cursor,cmd)
+        except Exception as e:
+            #raise e
+            pass
 
 def make_sports():
 
@@ -382,6 +401,87 @@ def make_specialists():
     execute_sql(cursor,cmd)
     pk["trainer"]="afm"
     populate_specialists()
+
+
+def populate_trainings(amount,month_trainings=True):
+    """if month_training=True it will make trainings for whole months for a random sport,subscription,room,trainer"""
+    
+    def create_training():
+
+        date=create_date("2021-12-1","2022-12-15")
+        start_time = create_time("")
+        duration = random.randint(1,3)
+        subscription = execute_sql(cursor,f"""SELECT name FROM subscription ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        sport = execute_sql(cursor,f"""SELECT name FROM sport ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        room = execute_sql(cursor,f"""SELECT id FROM room ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        trainer = execute_sql(cursor,f"""SELECT afm FROM trainer ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+
+        return date,start_time,duration,subscription,sport,room,trainer
+
+    def create_month_trainings(givendate):
+
+        givenyear,givenmonth = givendate.split("-")[0:2]
+
+        subscription = execute_sql(cursor,f"""SELECT name FROM subscription ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        sport = execute_sql(cursor,f"""SELECT name FROM sport ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        room = execute_sql(cursor,f"""SELECT id FROM room ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+        trainer = execute_sql(cursor,f"""SELECT afm FROM trainer ORDER BY RANDOM() LIMIT 1""").fetchone()[0]
+
+        for i in range(29 if givenmonth==2 else 32):
+            date=f"{givenyear}-{givenmonth}-{str(i).zfill(2)}"
+            start_time = create_time()
+            duration = random.randint(1,3)
+        
+            values=date,start_time,duration,subscription,sport,room,trainer
+            cmd = f"""INSERT INTO training (date,start_time,duration,subscription,sport,room,trainer) VALUES {values};""" #Dont use ({create_client()}) because we would end up with double ()
+            #print(cmd)
+            try:
+                execute_sql(cursor,cmd)
+            except:
+                pass
+
+
+    if month_trainings:
+        for id in range(amount):
+            create_month_trainings(create_date("2021-12-1","2022-12-1"))
+
+    else:
+
+        for id in range(amount):
+            cmd = f"""INSERT INTO training () VALUES {create_training()};""" #Dont use ({create_client()}) because we would end up with double ()
+
+            #print(cmd)
+            try:
+                execute_sql(cursor,cmd)
+            except:
+                pass #except failed constraint
+
+def make_trainings():
+
+    #delete table if it existed
+    cmd="""DROP TABLE IF EXISTS training;"""
+    execute_sql(cursor,cmd)
+
+    #create table
+    cmd=f"""CREATE TABLE IF NOT EXISTS training(
+        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+        "date" DATE NOT NULL,
+        "start_time" TIME,
+        "duration" integer NOT NULL,
+        "subscription" varchar(30) NOT NULL,
+        "sport" varchar(30) DEFAULT NULL,
+        "room" integer NOT NULL,
+        "trainer" DEFAULT NULL,
+        
+        CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "sport_fk" FOREIGN KEY("sport") REFERENCES "sport"("name") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "room_fk" FOREIGN KEY("room") REFERENCES "room"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "trainer_fk" FOREIGN KEY("trainer") REFERENCES "trainer"("afm") ON DELETE SET DEFAULT ON UPDATE CASCADE
+    );"""
+
+    execute_sql(cursor,cmd)
+    pk["training"]="id"
+    populate_trainings(100)
 
 
 
@@ -450,9 +550,9 @@ make_specialists()
 make_rooms()
 make_equipment()
 make_sports()
-make_subscription()
+make_subscriptions()
 make_clients()
-
+make_trainings()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
@@ -474,6 +574,7 @@ print(getInfo("subscription","1"))'''
 '''
 
 #getAllTablesInfo()
+
 
 connection.commit()
 connection.close()
