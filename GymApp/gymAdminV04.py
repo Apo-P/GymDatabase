@@ -18,13 +18,6 @@ def execute_sql(cursor,sql):
 
     return cursor.execute(sql)
 
-def getUserInfo(userId):
-    """Returns all info on user requested by id"""
-
-    cmd=f"""SELECT * FROM client WHERE client_id={userId};"""
-
-    return execute_sql(cursor,cmd).fetchone()
-
 def getcolumnNames(table)-> tuple:
     """Will return column names of table given"""
     columns=[]
@@ -39,6 +32,37 @@ def getcolumnNames(table)-> tuple:
 
     return tuple(columns)
 
+def push_data(table,data):
+    """will Insert data into table given (data must be a dictionary with key the field names)"""
+
+    print(data)
+    attr=[]
+    values=[]
+    for field in data:
+        attr.append(field)
+        if data[field].isnumeric(): #NEEDS FIX formating should be dependant on type , this is a quickfix
+            values.append(int(data[field])) 
+        elif data[field]=="":
+             values.append("NULL") 
+        else:
+            values.append(data[field]) 
+        print(attr,values)
+
+    attr=tuple(attr)
+    values=tuple(values)
+
+    cmd=f"""INSERT INTO {table} {attr} VALUES {values};"""
+    print(cmd)
+    execute_sql(cursor,cmd)
+
+def commit_changes():
+    connection.commit()
+
+def get_customer_info(customer_id):
+    """Gets customer info that is necessary for everyday operations"""
+
+    cmd = f"""SELECT * FROM client WHERE id={customer_id}"""
+    basic_info=execute_sql(cursor,cmd).fetchone()
 
 class GUI():
 
@@ -56,15 +80,15 @@ class GUI():
         self.mainWindow.protocol("WM_DELETE_WINDOW", self.close_app) #will run the close app when user clicks the exit button
 
         self.mainMenuBar = tk.Menu(master=self.mainWindow)
-        self.mainMenuBar.add_command(label="CLICK",command=self.foo)
+        #self.mainMenuBar.add_command(label="CLICK",command=self.foo)
 
         self.mainMenuBar.add_command(label="ReturnToMainWindow",command=lambda:self.changeFrame(MainWindow))
 
-        self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(InputWindow))
+        self.mainMenuBar.add_command(label="AddNewCustomer",command=lambda:self.changeFrame(CustomerInput))
+
+        self.mainMenuBar.add_command(label="SearchCustomers",command=lambda:self.changeFrame(CustomerSearch))
 
         self.mainMenuBar.add_command(label="SQLWindow",command=lambda:self.changeFrame(SQLWindow))
-
-        self.mainMenuBar.add_command(label="SearchWindow",command=lambda:self.changeFrame(SearchWindow))
 
         self.mainWindow.config(menu=self.mainMenuBar) #Attaches mainMenuBar to mainwindow
 
@@ -99,6 +123,7 @@ class GUI():
         self.frame = newframe
         self.frame.pack(expand=True,fill=tk.BOTH) #New frame will take up all the screen it can find
 
+
     def close_app(self):
         """This will run when user presses the close bytton"""
 
@@ -118,11 +143,8 @@ class MainWindow(tk.Frame):
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
-        label = tk.Label(master=self, text="Welcome to MainWindow")
-
-        label.pack()
-
-        idFrame = tk.Frame(master=self, bg ="red")
+        idFrame = tk.Frame(master=self)
+        idFrame.pack(side=tk.TOP,fill=tk.BOTH)
 
         idlabel = tk.Label(master=idFrame, text="Customer ID:")
         idlabel.pack(side=tk.LEFT)
@@ -131,23 +153,22 @@ class MainWindow(tk.Frame):
         showIdlabel = tk.Label(master=idFrame, textvar=customerId)
         showIdlabel.pack(side=tk.LEFT)
 
-        idFrame.pack(side=tk.TOP,fill=tk.BOTH)
 
         ButtonFrame = tk.Frame(master=self)
-        ButtonFrame.pack(side=tk.TOP)
+        ButtonFrame.pack(side=tk.TOP, fill=tk.X)
 
-        infobutton = tk.Button(master=ButtonFrame, text="Show customer info", command= lambda : customerId.set("1234564574"))
+        infobutton = tk.Button(master=ButtonFrame, text="Show customer info", command= lambda : self.showMoreInfo(self,customerId))
         infobutton.pack(side=tk.LEFT)
         clearbutton = tk.Button(master=ButtonFrame, text="click to clear info", command= lambda : customerId.set(""))
         clearbutton.pack(side=tk.LEFT)
 
-        moreinfobutton = tk.Button(master=ButtonFrame, text="Show more customer info", command= lambda : self.showMoreInfo(self,customerId))
-        moreinfobutton.pack(side=tk.LEFT)
 
+        entryFrame = tk.Frame(master=ButtonFrame)
+        entryFrame.pack(side = tk.RIGHT)
 
-        entryboxvar =tk.StringVar(master=self)
-        entrybox = tk.Entry(master=self, textvariable=entryboxvar)
-        entrybox.bind('<Return>', lambda event : self.getentry(event,entrybox, customerId) ) #bind function forces to take into consideration the event that triggers the command
+        entryboxvar =tk.StringVar(master=entryFrame)
+        entrybox = tk.Entry(master=entryFrame, textvariable=entryboxvar)
+        entrybox.bind('<Return>', lambda event : self.getentry(event,entrybox, customerId) )
         entrybox.pack(side=tk.TOP)
 
         textbox = tk.Text(master=self)
@@ -181,24 +202,27 @@ class MainWindow(tk.Frame):
         entrybox=the entrybox to get the variable from, outvar=the variable to save the entry to. """
 
         outvar.set(entrybox.get())
-        
 
 
 class InputWindow(tk.Frame):
     
-    def __init__(self, parent, controller):
-        """Makes a generic Input window with a Form"""
+    def __init__(self, parent, controller,input_table):
+        """Makes a generic Input window with a Form for the table given"""
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
-        label = tk.Label(master=self, text="Welcome to input window")
+        #label = tk.Label(master=self, text="Welcome to input window")
+        #label.pack()
 
-        label.pack()
+        #fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
+        #newfields = {"FirstName":1,"LastName":2,"AFM":3,"Sex":4,"Salary":5,"Supervisor":6,"Department":7} #for testing
 
-        fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
-        newfields = {"FirstName":1,"LastName":2,"AFM":3,"Sex":4,"Salary":5,"Supervisor":6,"Department":7} #for testing
+        #self.makeForm(fields,print,lambda: newfields) #can change print to any command we want to take the new data, can change the lambda to any command tha will return the new data
+        self.table=input_table
+        fields = getcolumnNames(self.table)
+        print(fields)
 
-        self.makeForm(fields,print,lambda: newfields) #can change print to any command we want to take the new data, can change the lambda to any command tha will return the new data
+        self.makeForm(fields,self.insert_data)
 
     def makeForm(self, fields, dataHandlerCommand, dataUpdaterCommand=None, initialValues=None):
         """Makes a frame with a form and some buttons to control it.    
@@ -211,7 +235,7 @@ class InputWindow(tk.Frame):
         label = tk.Label(master=entryFrame, text="Please fill out the fields bellow") #change later to display what is being filled out
         label.pack(pady=5,side=tk.TOP)
 
-        fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
+        #fields = ("FirstName","LastName","AFM","Sex","Salary","Supervisor","Department") #for testing
         entries=forms.makeInputForm(entryFrame,fields)
 
         if initialValues:
@@ -232,6 +256,21 @@ class InputWindow(tk.Frame):
 
         entryFrame.pack(padx=10,pady=10,fill=tk.X)
 
+    def insert_data(self,data):
+        print("inserting data")
+        print(data)
+        try:
+            push_data(self.table,data) 
+            commit_changes()
+        except Exception as e:
+            tkinter.messagebox.showwarning(message=f"ERROR:{e}")
+            #raise e
+
+class CustomerInput(InputWindow):
+    def __init__(self, parent, controller):
+        """Makes an input window for a customer"""
+        super(CustomerInput,self).__init__(parent, controller,"client")
+
 
 class DisplayWindow (tk.Frame):
     
@@ -241,9 +280,8 @@ class DisplayWindow (tk.Frame):
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
-        label = tk.Label(master=self, text="Welcome to Display window")
-
-        label.pack(side=tk.TOP)
+        #label = tk.Label(master=self, text="Welcome to Display window")
+        #label.pack(side=tk.TOP)
 
         #columns = ("FirstName","LastName","PhoneNumber","Trainer") #for testing
         #data = (("Smith","Smithpoulos","6912345678",""),("John","Johnopoulos","6923456789","12345678"))
@@ -313,19 +351,20 @@ class DisplayWindow (tk.Frame):
                 pass
         self.dataFrames={} #reset keys
 
+
 class SearchWindow(tk.Frame):
 
-    def __init__(self, parent, controller):
-        """Makes a generic Display window"""
+    def __init__(self, parent, controller,table):
+        """Makes a search window for table given"""
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
-        label = tk.Label(master=self, text="Welcome to Search window")
+        label = tk.Label(master=self, text=f"Searching for {table}")
 
         label.pack(side=tk.TOP)
 
 
-        self.make_search_window("client")
+        self.make_search_window(table)
 
 
     def make_search_window(self,searchTable):
@@ -404,6 +443,9 @@ class SearchWindow(tk.Frame):
         results=execute_sql(cursor,cmd).fetchall()
         self.displayWindow.addData(results)
 
+class CustomerSearch(SearchWindow):
+    def __init__(self,parent,controller):
+        super(CustomerSearch,self).__init__(parent,controller,"client")
 
 
 
