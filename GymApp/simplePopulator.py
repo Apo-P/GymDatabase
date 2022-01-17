@@ -504,7 +504,7 @@ def populate_buys(amount):
         try:
             execute_sql(cursor,cmd)
         except Exception as e:
-            #raise e
+            #raise e #ERROR if it tries to make the same person buy the same subscription twice
             pass
 
 def make_buys():
@@ -520,7 +520,8 @@ def make_buys():
             "discount" float NOT NULL,
             
             CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE
+            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "client"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+            UNIQUE("subscription","client_id")
             );"""
 
         execute_sql(cursor,cmd)
@@ -539,7 +540,7 @@ def populate_payments_pays_offs(client_amount):
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                raise e
+                #raise e
                 pass
 
         def create_pays_off(subscription,client_id):
@@ -548,7 +549,7 @@ def populate_payments_pays_offs(client_amount):
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                raise e
+                #raise e
                 pass
             
 
@@ -603,6 +604,7 @@ def make_payments_pays_offs():
             CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "payment"("id") ON DELETE CASCADE ON UPDATE CASCADE
             );"""
+            #Unique is to make sure no 
 
         execute_sql(cursor,cmd)
 
@@ -809,7 +811,7 @@ make_buys()
 make_relations()
 make_payments_pays_offs()
 
-#printEverything()
+printEverything()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
