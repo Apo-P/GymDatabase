@@ -61,10 +61,56 @@ def commit_changes():
 def get_customer_info(customer_id):
     """Gets customer info that is necessary for everyday operations"""
 
-    cmd = f"""SELECT * FROM client WHERE id={customer_id}"""
-    basic_info=execute_sql(cursor,cmd).fetchone()
+    def get_subs():
+        subscriptionText=" Subscriptions bought:\n"
+        for subscription in subscriptions:
+            cmd = f"""SELECT price,start_date,end_date FROM subscription WHERE name="{subscription[0]}" ;"""
+            #print(cmd)
+            results=execute_sql(cursor,cmd).fetchone()
+            #print(results)
+            price,sDate,Edate=results
+            subscriptionText+=f"  Subscription:{subscription}  price:{price} Startdate:{sDate} EndDate:{Edate}\n"+get_payments(subscription)
+        return subscriptionText
 
-    cmd = f"""SELECT"""
+    def get_payments(subscription):
+        paymentsText="   Payments Made:\n"
+        
+        cmd = f"""SELECT amount,payment_date FROM payment WHERE client_id="{customer_id}" AND id IN (SELECT payment_id FROM pays_off);"""
+        payments=execute_sql(cursor,cmd).fetchall()
+        for payment in payments:
+            amount,payment_date=payment
+
+            #print(results)
+            paymentsText+=f"    Amount paid:{amount}  date_paid:{payment_date}\n"
+        return paymentsText
+
+    #-----get-basic-info------
+
+    if customer_id=="":
+        return f"NO customer id given"
+
+    cmd = f"""SELECT f_name,l_name,p_number,personal_trainer FROM client WHERE id={customer_id};"""
+    #print(cmd)
+    results=execute_sql(cursor,cmd).fetchone()
+    #print(results)
+    if not results:
+        return f"ID NOT IN DATABASE"
+    name,surname,phone,personal = results
+
+    if personal: #if client has personal
+        cmd = f"""SELECT f_name,l_name FROM employee WHERE afm={personal};"""
+        #print(cmd)
+        personal=execute_sql(cursor,cmd).fetchone()
+
+    cmd = f"""SELECT subscription FROM buys WHERE client_id={customer_id} ;"""
+    #print(cmd)
+    subscriptions=execute_sql(cursor,cmd).fetchall()
+
+
+    #print(subscriptions)
+    
+
+    return f"Customer id={customer_id}\n Name={name}\n Surname={surname}\n PhoneNumber={phone}\n Personal Trainer={personal}\n"+get_subs()
 
 class GUI():
 
@@ -145,23 +191,26 @@ class MainWindow(tk.Frame):
         tk.Frame.__init__(self, master=parent) #now this class is itself the mainframe /Couldnt use super here because tkinter is very old
         self.controller = controller
 
+        self.textframe=None
+
         idFrame = tk.Frame(master=self)
         idFrame.pack(side=tk.TOP,fill=tk.BOTH)
 
         idlabel = tk.Label(master=idFrame, text="Customer ID:")
         idlabel.pack(side=tk.LEFT)
 
-        customerId = tk.StringVar(master=idFrame,value="")
-        showIdlabel = tk.Label(master=idFrame, textvar=customerId)
+        self.customerId = ""
+        customer=tk.StringVar(master=idFrame,value="")
+        showIdlabel = tk.Label(master=idFrame, textvar=customer)
         showIdlabel.pack(side=tk.LEFT)
 
 
         ButtonFrame = tk.Frame(master=self)
         ButtonFrame.pack(side=tk.TOP, fill=tk.X)
 
-        infobutton = tk.Button(master=ButtonFrame, text="Show customer info", command= lambda : self.showMoreInfo(self,customerId))
+        infobutton = tk.Button(master=ButtonFrame, text="Show customer info", command= lambda : self.showMoreInfo(self,self.customerId))
         infobutton.pack(side=tk.LEFT)
-        clearbutton = tk.Button(master=ButtonFrame, text="click to clear info", command= lambda : customerId.set(""))
+        clearbutton = tk.Button(master=ButtonFrame, text="click to clear info", command= lambda : self.clearInfo())
         clearbutton.pack(side=tk.LEFT)
 
 
@@ -170,7 +219,7 @@ class MainWindow(tk.Frame):
 
         entryboxvar =tk.StringVar(master=entryFrame)
         entrybox = tk.Entry(master=entryFrame, textvariable=entryboxvar)
-        entrybox.bind('<Return>', lambda event : self.getentry(event,entrybox, customerId) )
+        entrybox.bind('<Return>', lambda event : self.getentry(event,entrybox, customer) )
         entrybox.pack(side=tk.TOP)
 
         textbox = tk.Text(master=self)
@@ -181,21 +230,23 @@ class MainWindow(tk.Frame):
 
     def showMoreInfo(self, frame, customerId):
         """Will create a textbox with more of the customers information"""
-        #getinfo()
-        fields = {"FirstName":1,"LastName":2,"AFM":3,"Sex":4,"Salary":5,"Supervisor":6,"Department":7} #for testing
-        textframe = tk.Frame(master=frame)
 
+        if self.textframe: #if there is already a textbox
+            self.clearInfo()
+            self.showMoreInfo(frame, customerId)
+        else: #if there is no othe text box
 
-        textbox = tk.Text(master=textframe)
+            self.textframe = tk.Frame(master=frame)
 
-        textbox.insert(tk.END,"gasgkasjgasjd\n")
+            textbox = tk.Text(master=self.textframe)
 
-        for field in fields.keys():
+            try:
+                textbox.insert(tk.END,get_customer_info(customerId))
+            except Exception as e:
+                tkinter.messagebox.showwarning(message=f"ERROR:{e}")
 
-            textbox.insert(tk.END,str(fields[field])+"\n")
-
-        textbox.pack(fill=tk.BOTH)
-        textframe.pack(side=tk.TOP,fill=tk.BOTH)
+            textbox.pack(fill=tk.BOTH)
+            self.textframe.pack(side=tk.TOP,fill=tk.BOTH)
 
 
     def getentry(self,event, entrybox, outvar):
@@ -204,7 +255,14 @@ class MainWindow(tk.Frame):
         entrybox=the entrybox to get the variable from, outvar=the variable to save the entry to. """
 
         outvar.set(entrybox.get())
+        self.customerId=entrybox.get()
 
+    def clearInfo(self):
+        if self.textframe is None:
+            pass
+        else:
+            self.textframe.destroy()
+            self.textframe=None
 
 class InputWindow(tk.Frame):
     
@@ -288,7 +346,7 @@ class DisplayWindow (tk.Frame):
         #columns = ("FirstName","LastName","PhoneNumber","Trainer") #for testing
         #data = (("Smith","Smithpoulos","6912345678",""),("John","Johnopoulos","6923456789","12345678"))
 
-        self.displayFrame=tk.Frame(master=self,bg="red")
+        self.displayFrame=tk.Frame(master=self)
         self.displayFrame.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
 
     

@@ -544,8 +544,22 @@ def populate_payments_pays_offs(client_amount):
                 pass
 
         def create_pays_off(subscription,client_id):
-            values=subscription,client_id
-            cmd = f"""INSERT INTO pays_off (subscription,client_id) VALUES {values};""" 
+
+            #cmd2 = f"""SELECT id FROM payment ;"""
+            #result=execute_sql(cursor,cmd2).fetchall()
+            #print(result)
+
+            #cmd2 = f"""SELECT DISTINCT payment_id FROM pays_off ;"""
+            #result=execute_sql(cursor,cmd2).fetchall()
+            #print(result)
+
+            cmd=f"""SELECT id FROM payment WHERE client_id={client_id} AND id NOT IN (SELECT DISTINCT payment_id FROM pays_off);"""
+            #print(cmd)
+            payment_id = execute_sql(cursor,cmd).fetchone()[0]
+            #print(payment_id)
+            values=subscription,payment_id
+
+            cmd = f"""INSERT INTO pays_off (subscription,payment_id) VALUES {values};""" 
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
@@ -598,11 +612,12 @@ def make_payments_pays_offs():
 
         #create table
         cmd=f"""CREATE TABLE IF NOT EXISTS pays_off(
+            "payment_id" integer NOT NULL,
             "subscription" varchar(50) NOT NULL,
-            "client_id" integer NOT NULL,
             
             CONSTRAINT "subscription_fk" FOREIGN KEY("subscription") REFERENCES "subscription"("name") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "client_fk" FOREIGN KEY("client_id") REFERENCES "payment"("id") ON DELETE CASCADE ON UPDATE CASCADE
+            CONSTRAINT "payment_fk" FOREIGN KEY("payment_id") REFERENCES "payment"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+            UNIQUE("payment_id","subscription")
             );"""
             #Unique is to make sure no 
 
@@ -615,6 +630,7 @@ def make_payments_pays_offs():
 
         #create table
         cmd=f"""CREATE TABLE IF NOT EXISTS payment(
+            "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
             "client_id" integer NOT NULL,
             "amount" integer NOT NULL,
             "payment_date" DATE NOT NULL,
@@ -812,7 +828,7 @@ make_relations()
 make_payments_pays_offs()
 
 
-#printEverything()
+printEverything()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
