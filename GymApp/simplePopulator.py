@@ -52,7 +52,7 @@ def create_date(previous_date = "2010-1-1",yearlimit="2022-2-2"):
 
     y = random.randint(p_y, l_y)
     m = random.randint(p_m if y == p_y else 1, 12 if y==p_y else l_m)
-    d = random.randint(p_d if m == p_m else 1, (28 if m == 2 else 30) if m==p_y else l_d)
+    d = random.randint(p_d if m == p_m else 1, (28 if m == 2 else 30) if m==p_m else l_d)
 
     return "%s-%s-%s" % (y, str(m).zfill(2), str(d).zfill(2))
 
@@ -246,7 +246,8 @@ def populate_equipment(amount):
         #print(cmd)
         try:
             execute_sql(cursor,cmd)
-        except:
+        except Exception as e:
+            #raise e
             #print("same serial_number")
             pass #except failed constraint
 
@@ -286,8 +287,8 @@ def populate_subscriptions(amount):
 
         end_date="%s-%s-%s" % (y, str(m).zfill(2), str(d).zfill(2))
 
-        name=random.choice(sports)+str(m)+str(y)
-        price= (m-p_m if p_y==y else abs(m-p_m) + 12* abs(y-p_y)) * 100
+        name=random.choice(sports)+f"-{str(m).zfill(2)}-{str(y).zfill(4)}"
+        price= (m-p_m+100 if p_y==y else abs(m-p_m) + 12* abs(y-p_y)) * 100
         description=random.choice(equipment)
 
         return name,price,start_date,end_date,description
@@ -526,54 +527,69 @@ def make_buys():
         populate_buys(10)
 
 
-def populate_payments_pay_offs(client_amount):
+def populate_payments_pays_offs(client_amount):
     def create_payments():
 
         def create_payment(client_id,amount,init_day):
+            #print(init_day)
             date=create_date(init_day,"2022-12-12") #create a random date after the date the sub was bought
             values=client_id,amount,date
-            cmd = f"""INSERT INTO payment (client_id,amount,payment_date) VALUES ("{values}");""" 
+            cmd = f"""INSERT INTO payment (client_id,amount,payment_date) VALUES {values};""" 
+            #print(cmd)
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                #print(e)
+                raise e
                 pass
 
-        def create_pay_off(subscription,client_id):
+        def create_pays_off(subscription,client_id):
             values=subscription,client_id
-            cmd = f"""INSERT INTO pay_off (subscription,client_id) VALUES ("{values}");""" 
+            cmd = f"""INSERT INTO pays_off (subscription,client_id) VALUES {values};""" 
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                #print(e)
+                raise e
                 pass
             
 
         
-        cmd = f"""SELECT c.id FROM client as c WHERE c.id NOT IN(SELECT DISTINCT id FROM payment) AND c.id IN(SELECT DISTINCT id FROM buys)  ORDER BY RANDOM();""" #select random client who has no payment but has buys
-        print(cmd)
-        client_id=execute_sql(cursor,cmd).fetchone()[0]
+        cmd = f"""SELECT c.id FROM client as c WHERE c.id NOT IN(SELECT DISTINCT client_id FROM payment) AND c.id IN(SELECT DISTINCT client_id FROM buys)  ORDER BY RANDOM();""" #select random client who has no payment but has buys
+        #print(cmd)
+        client_id=execute_sql(cursor,cmd).fetchone()
+        #print(client_id)
+        if client_id==None:
+            print("everyone has payed")
+            return
+        client_id=client_id[0]
+        #print(f"client = {client_id}")
 
-        cmd=f"""SELECT s.name,s.price FROM subscription as s,buys as b WHERE b.client_id={client_id} and s.name NOT IN (SELECT name FROM pays_off WHERE client_id={client_id});""" #select random amount from bought subscriptions to make payments for 
-        print(cmd)
+        cmd=f"""SELECT s.name,s.price FROM subscription as s, buys as b WHERE b.subscription=s.name AND b.client_id={client_id} AND s.name NOT IN (SELECT subscription FROM pays_off WHERE client_id={client_id}) ORDER BY RANDOM();""" #select random amount from bought subscriptions to make payments for 
+        #print(cmd)
+        #results2=execute_sql(cursor,cmd).fetchall()
         results=execute_sql(cursor,cmd).fetchone()
-        print(results)
+
+        #print(f"client{client_id} has  subs:{results2} chosen sub:{results}")
+        if results==None: #if this client hasnt bought anyhthing yet
+            #print(f"client hasnt bought anything yet")
+            return
         subscription,total_amount=results
 
         cmd=f"""SELECT date FROM buys WHERE subscription="{subscription}" ;"""  #select the date from the buy of the subscription
-        print(cmd)
-        date=subscription,total_amount=execute_sql(cursor,cmd).fetchone()[0]
+        #print(cmd)
+        date=execute_sql(cursor,cmd).fetchone()[0]
+        #print(date)
 
 
-        div=range(random.randint(1,4)) #select random dividant
+        div=random.randint(1,4) #select random dividant
         for i in range(div): #make payment and assign what it pays off
+            #print(i)
             create_payment(client_id,total_amount/div,date)
-            create_pay_off(subscription,client_id)
+            create_pays_off(subscription,client_id)
 
     for client in range(client_amount):
         create_payments()
 
-def make_payments_pay_offs():
+def make_payments_pays_offs():
     def make_pays_off():
         #delete table if it existed
         cmd="""DROP TABLE IF EXISTS pays_off;"""
@@ -608,18 +624,19 @@ def make_payments_pay_offs():
 
     make_payments()
     make_pays_off()
-    populate_payments_pay_offs(5)
+    populate_payments_pays_offs(5)
 
 def populate_relations():
     def create_equipment_use():
         def create_equipment(training_id,equipment_id):
             values=training_id,equipment_id
             #print(values)
-            cmd = f"""INSERT INTO equipment_use (training_id,equipment_id) VALUES ("{values}");""" 
+            cmd = f"""INSERT INTO equipment_use (training_id,equipment_id) VALUES {values};""" 
+            #print(cmd)
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                #print(e)
+                #raise e
                 pass
             
         cmd="""SELECT id FROM training;"""
@@ -636,11 +653,12 @@ def populate_relations():
         def create_work(gym,employee):
             values=gym,employee
             #print(values)
-            cmd = f"""INSERT INTO work (gym_location,employee_afm) VALUES ("{values}");""" 
+            cmd = f"""INSERT INTO works (gym_location,employee_afm) VALUES {values};""" 
+            #print(cmd)
             try:
                 execute_sql(cursor,cmd)
             except Exception as e:
-                #print(e)
+                #raise e
                 pass
             
         cmd="""SELECT afm FROM employee;"""
@@ -768,6 +786,16 @@ def printAllValues(table):
     for result in results:
         print(result)
 
+def printEverything():
+    for name in getTableNames():
+        if name!="training" and name!="equipment_use":
+            print(f"table {name} has:")
+            printAllValues(name)
+        elif name!="equipment_use":
+            print("equipment_use has to much to show")
+        else:
+            print("trainings has to much to show")
+
 make_gyms()
 make_employees()
 make_specialists()
@@ -779,9 +807,9 @@ make_clients()
 make_trainings()
 make_buys()
 make_relations()
+make_payments_pays_offs()
 
-printAllValues("buys")
-make_payments_pay_offs()
+#printEverything()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
