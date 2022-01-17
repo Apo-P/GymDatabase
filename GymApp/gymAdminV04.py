@@ -64,6 +64,8 @@ def get_customer_info(customer_id):
     cmd = f"""SELECT * FROM client WHERE id={customer_id}"""
     basic_info=execute_sql(cursor,cmd).fetchone()
 
+    cmd = f"""SELECT"""
+
 class GUI():
 
     def __init__(self) -> None:
