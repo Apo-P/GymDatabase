@@ -280,7 +280,7 @@ class InputWindow(tk.Frame):
         #self.makeForm(fields,print,lambda: newfields) #can change print to any command we want to take the new data, can change the lambda to any command tha will return the new data
         self.table=input_table
         fields = getcolumnNames(self.table)
-        print(fields)
+        #print(fields)
 
         self.makeForm(fields,self.insert_data)
 
@@ -317,8 +317,8 @@ class InputWindow(tk.Frame):
         entryFrame.pack(padx=10,pady=10,fill=tk.X)
 
     def insert_data(self,data):
-        print("inserting data")
-        print(data)
+        #print("inserting data")
+        #print(data)
         try:
             push_data(self.table,data) 
             commit_changes()
@@ -360,7 +360,7 @@ class DisplayWindow (tk.Frame):
         self.columnFrame = tk.Frame(master=self.displayFrame)
         self.columnFrame.pack(side=tk.TOP, fill=tk.X)
         for column in columnNames:
-            print(column)
+            #print(column)
             columnLabel = tk.Label(master=self.columnFrame,width=14,padx=3, text=column) #padx maybe change?
             columnLabel.pack(side=tk.LEFT)
 
@@ -442,9 +442,9 @@ class SearchWindow(tk.Frame):
         self.buttonoptions = {} #here we will store which buttons have been pressed
         self.entries={}
         i=0
-        print(getcolumnNames(searchTable))
+        #print(getcolumnNames(searchTable))
         for column in getcolumnNames(searchTable):
-            print(column)
+            #print(column)
             optionbutton = tk.Button(master=self.configFrame,width=14, text=column) 
             optionbutton.config(command=lambda optionbutton=optionbutton,column=column:self.toggleColumn(optionbutton,column))#Attention in the lambda Use default parameter to avoid late-binding issue link:https://stackoverflow.com/questions/27198287/tkinter-create-multiple-buttons-with-different-command-function
             self.buttonoptions[column]=[i,False] #stores column position and state
@@ -475,7 +475,7 @@ class SearchWindow(tk.Frame):
         #print(self.entries)
 
     def do_search(self,searchTable):
-        print("searching")
+        #print("searching")
 
         cmd= f"""SELECT * FROM {searchTable}"""
 
@@ -485,17 +485,18 @@ class SearchWindow(tk.Frame):
             searchitem=self.entries[column].get()
             if searchitem:
                 if searchitem.isnumeric(): #NEEDS FIX formating should be dependant on type , this is a quickfix
-                    cmdExt += f""" {column}={searchitem},""" 
+                    cmdExt += f""" {column}={searchitem} AND""" 
                 else:
-                    cmdExt += f""" {column}="{searchitem}",""" 
+                    cmdExt += f""" {column}="{searchitem}" AND""" 
             else:
-                print("noinput")
+                #print("noinput")
+                pass
 
-        if cmdExt!="""""":cmd += """ WHERE"""+cmdExt[:-1] #if there is anything to search for (cmdExt[:-1] remove last comma)
+        if cmdExt!="""""":cmd += """ WHERE"""+cmdExt[:-3] #if there is anything to search for (cmdExt[:-1] remove last AND)
 
         cmd+=""" ;"""
 
-        print(cmd)
+        #print(cmd)
         self.do_sql(cmd)
 
     def do_sql(self,cmd):
