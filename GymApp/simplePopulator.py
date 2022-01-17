@@ -811,7 +811,8 @@ make_buys()
 make_relations()
 make_payments_pays_offs()
 
-printEverything()
+
+#printEverything()
 
 '''print(getInfo("client","1"))
 print(getInfo("employee","123456789"))
@@ -832,7 +833,7 @@ print(getInfo("subscription","1"))'''
         print("column name=",column[1],"     IsPrimarykey=",column[5])
 '''
 
-#getAllTablesInfo()
+getAllTablesInfo()
 
 
 connection.commit()
