@@ -9,7 +9,7 @@ def makeInputForm(frame,fields):
         fieldFrame = tk.Frame(master=frame)
         fieldLabel = tk.Label(master=fieldFrame, width=12, text=field+": ", anchor="w")
         fieldEntry = tk.Entry(master=fieldFrame)
-        fieldEntry.insert(0,"0")#maybe change to 'NULL' for string fields?
+        fieldEntry.insert(0,"")#maybe change 0 to 'NULL' for string fields? #changed to NULL
 
         fieldFrame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
         fieldLabel.pack(side=tk.LEFT)
