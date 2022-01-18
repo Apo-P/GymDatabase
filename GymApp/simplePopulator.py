@@ -91,7 +91,7 @@ def populate_gyms(amount):
         try:
             execute_sql(cursor,cmd)
         except:
-            pass #except failed constraint
+            pass #except failed constraint 
 
 def make_gyms():
 
@@ -102,7 +102,9 @@ def make_gyms():
     #create table
     cmd="""CREATE TABLE IF NOT EXISTS gym(
         "location" varchar(30) NOT NULL PRIMARY KEY,
-        "address" varchar(30) NOT NULL
+        "address" varchar(30) NOT NULL,
+
+        UNIQUE("location","address")
     );"""
     execute_sql(cursor,cmd)
     populate_gyms(10)
