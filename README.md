@@ -18,7 +18,7 @@ Or you can directly clone the Repository using
 1. First Navigate to GymApp Folder:  
     ```cd .\GymApp\```  
 
-2. Then run this InputForms:  
+2. Then run "InputForms.py":  
     ```python InputForms.py```  
    It will create a new database and fill it with new data.
 
